@@ -22,6 +22,12 @@ const profilesRoutes = require('./routes/profiles');
 const urlsRoutes = require('./routes/urls');
 const emotesRoutes = require('./routes/emotes');
 const blockedRoutes = require('./routes/blocked');
+const videoQualityRoutes = require('./routes/video-quality');
+const connectionStatusRoutes = require('./routes/connection-status');
+const guestStreamersRoutes = require('./routes/guest-streamers');
+const raidsRoutes = require('./routes/raids');
+const tipSplitsRoutes = require('./routes/tip-splits');
+const userRestrictionsRoutes = require('./routes/user-restrictions');
 
 // Import middleware
 const { authenticateToken } = require('./middleware/auth');
@@ -77,6 +83,12 @@ app.use('/api/profiles', authenticateToken, profilesRoutes);
 app.use('/api/urls', urlsRoutes);
 app.use('/api/emotes', emotesRoutes);
 app.use('/api/blocked', authenticateToken, blockedRoutes);
+app.use('/api/video-quality', videoQualityRoutes);
+app.use('/api/connection-status', connectionStatusRoutes);
+app.use('/api/guests', guestStreamersRoutes);
+app.use('/api/raids', raidsRoutes);
+app.use('/api/tip-splits', tipSplitsRoutes);
+app.use('/api/restrictions', userRestrictionsRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/api/payments', paymentRoutes);
 

@@ -527,4 +527,294 @@ router.post('/categories', [
   }
 });
 
+// Get all active connections (admin only)
+router.get('/connections/active', [
+  requireRole(['admin'])
+], async (req, res) => {
+  try {
+    const connectionsResult = await query(`
+      SELECT 
+        cs.*,
+        u.username,
+        u.email,
+        u.is_verified
+      FROM connection_status cs
+      JOIN users u ON cs.user_id = u.id
+      WHERE cs.status = 'connected'
+      ORDER BY cs.last_ping DESC
+    `);
+
+    res.json({
+      active_connections: connectionsResult.rows,
+      total: connectionsResult.rows.length
+    });
+
+  } catch (error) {
+    console.error('Get active connections error:', error);
+    res.status(500).json({ error: 'Failed to fetch active connections' });
+  }
+});
+
+// Get platform analytics (enhanced)
+router.get('/analytics/enhanced', [
+  requireRole(['admin'])
+], async (req, res) => {
+  try {
+    const db = req.app.get('db');
+    
+    // Get user statistics
+    const userStatsResult = await query(`
+      SELECT 
+        COUNT(*) as total_users,
+        COUNT(CASE WHEN created_at > NOW() - INTERVAL '24 hours' THEN 1 END) as new_registrations,
+        COUNT(CASE WHEN last_seen > NOW() - INTERVAL '7 days' THEN 1 END) as active_users,
+        COUNT(CASE WHEN is_banned = true THEN 1 END) as banned_users
+      FROM users
+    `);
+    
+    const userStats = userStatsResult.rows[0];
+    
+    // Get streaming statistics
+    const streamingStatsResult = await query(`
+      SELECT 
+        COUNT(*) as total_streams,
+        SUM(EXTRACT(EPOCH FROM (ended_at - started_at))) as total_streaming_time,
+        AVG(EXTRACT(EPOCH FROM (ended_at - started_at))) as avg_streaming_time
+      FROM streaming_sessions
+      WHERE created_at > NOW() - INTERVAL '30 days'
+    `);
+    
+    const streamingStats = streamingStatsResult.rows[0];
+    
+    // Get tip statistics
+    const tipStatsResult = await query(`
+      SELECT 
+        COUNT(*) as total_tips,
+        SUM(amount) as total_tip_amount,
+        AVG(amount) as avg_tip_amount
+      FROM tips
+      WHERE created_at > NOW() - INTERVAL '30 days'
+    `);
+    
+    const tipStats = tipStatsResult.rows[0];
+    
+    // Get revenue statistics
+    const revenueStatsResult = await query(`
+      SELECT 
+        SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) as platform_revenue,
+        COUNT(DISTINCT recipient_id) as users_who_received_tips
+      FROM tips
+      WHERE created_at > NOW() - INTERVAL '30 days'
+    `);
+    
+    const revenueStats = revenueStatsResult.rows[0];
+    
+    // Calculate metrics
+    const analytics = {
+      total_users: parseInt(userStats.total_users),
+      active_users: parseInt(userStats.active_users),
+      banned_users: parseInt(userStats.banned_users),
+      new_registrations: parseInt(userStats.new_registrations),
+      total_streaming_time: parseInt(streamingStats.total_streaming_time) || 0,
+      average_session_time: parseInt(streamingStats.avg_streaming_time) || 0,
+      total_tips: parseInt(tipStats.total_tips) || 0,
+      total_tip_amount: parseFloat(tipStats.total_tip_amount) || 0,
+      platform_revenue: parseFloat(revenueStats.platform_revenue) || 0,
+      average_tip_amount: parseFloat(tipStats.avg_tip_amount) || 0
+    };
+    
+    res.json(analytics);
+  } catch (error) {
+    console.error('Error fetching enhanced platform analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch platform analytics' });
+  }
+});
+
+// Get system logs (enhanced)
+router.get('/logs/enhanced', [
+  requireRole(['admin'])
+], async (req, res) => {
+  try {
+    const { 
+      limit = 100, 
+      severity = 'all', 
+      action, 
+      user_id,
+      start_date,
+      end_date
+    } = req.query;
+    
+    let whereClause = 'WHERE 1=1';
+    const params = [];
+    let paramIndex = 1;
+    
+    if (severity !== 'all') {
+      whereClause += ` AND severity = $${paramIndex}`;
+      params.push(severity);
+      paramIndex++;
+    }
+    
+    if (action) {
+      whereClause += ` AND action ILIKE $${paramIndex}`;
+      params.push(`%${action}%`);
+      paramIndex++;
+    }
+    
+    if (user_id) {
+      whereClause += ` AND user_id = $${paramIndex}`;
+      params.push(user_id);
+      paramIndex++;
+    }
+    
+    if (start_date) {
+      whereClause += ` AND created_at >= $${paramIndex}`;
+      params.push(start_date);
+      paramIndex++;
+    }
+    
+    if (end_date) {
+      whereClause += ` AND created_at <= $${paramIndex}`;
+      params.push(end_date);
+      paramIndex++;
+    }
+    
+    params.push(parseInt(limit));
+    
+    const logsResult = await query(`
+      SELECT 
+        sl.*,
+        u.username,
+        u.email
+      FROM system_logs sl
+      LEFT JOIN users u ON sl.user_id = u.id
+      ${whereClause}
+      ORDER BY sl.created_at DESC
+      LIMIT $${paramIndex}
+    `, params);
+    
+    const logs = logsResult.rows.map(log => ({
+      id: log.id,
+      user_id: log.user_id,
+      username: log.username,
+      action: log.action,
+      resource_type: log.resource_type,
+      resource_id: log.resource_id,
+      details: log.details,
+      ip_address: log.ip_address,
+      user_agent: log.user_agent,
+      severity: log.severity,
+      created_at: log.created_at
+    }));
+    
+    res.json({
+      logs,
+      total: logs.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching enhanced system logs:', error);
+    res.status(500).json({ error: 'Failed to fetch system logs' });
+  }
+});
+
+// Export data
+router.get('/export/:type', [
+  requireRole(['admin'])
+], async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { format = 'csv' } = req.query;
+    
+    if (!['users', 'logs', 'tips', 'streams'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid export type' });
+    }
+    
+    let query, filename;
+    
+    switch (type) {
+      case 'users':
+        query = `
+          SELECT 
+            id, username, email, is_verified, is_banned, 
+            created_at, last_seen, total_streaming_time
+          FROM users 
+          ORDER BY created_at DESC
+        `;
+        filename = 'users_export.csv';
+        break;
+        
+      case 'logs':
+        query = `
+          SELECT 
+            id, user_id, action, resource_type, resource_id,
+            details, ip_address, severity, created_at
+          FROM system_logs 
+          ORDER BY created_at DESC
+          LIMIT 10000
+        `;
+        filename = 'logs_export.csv';
+        break;
+        
+      case 'tips':
+        query = `
+          SELECT 
+            id, sender_id, recipient_id, amount, message,
+            category, status, created_at
+          FROM tips 
+          ORDER BY created_at DESC
+          LIMIT 10000
+        `;
+        filename = 'tips_export.csv';
+        break;
+        
+      case 'streams':
+        query = `
+          SELECT 
+            id, streamer_id, title, category, language,
+            viewer_count, started_at, ended_at, total_tips
+          FROM streaming_sessions 
+          ORDER BY started_at DESC
+          LIMIT 10000
+        `;
+        filename = 'streams_export.csv';
+        break;
+    }
+    
+    const result = await query(query);
+    
+    // Convert to CSV
+    const csv = convertToCSV(result.rows);
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
+
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    res.status(500).json({ error: 'Failed to export data' });
+  }
+});
+
+// Helper function to convert data to CSV
+function convertToCSV(data) {
+  if (data.length === 0) return '';
+  
+  const headers = Object.keys(data[0]);
+  const csvHeaders = headers.join(',');
+  
+  const csvRows = data.map(row => 
+    headers.map(header => {
+      const value = row[header];
+      // Escape commas and quotes in CSV
+      if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value || '';
+    }).join(',')
+  );
+  
+  return [csvHeaders, ...csvRows].join('\n');
+}
+
 module.exports = router;
