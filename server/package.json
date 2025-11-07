@@ -37,7 +37,8 @@
     "rate-limiter-flexible": "^3.0.8",
     "express-validator": "^7.0.1",
     "uuid": "^9.0.1",
-    "node-cron": "^3.0.2"
+    "node-cron": "^3.0.2",
+    "crypto": "^1.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
