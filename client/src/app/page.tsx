@@ -27,16 +27,18 @@ import { CategoryFilter } from '@/components/streams/CategoryFilter';
 import { RegionSelector } from '@/components/RegionSelector';
 import Leaderboard from '@/components/ui/Leaderboard';
 import Achievements from '@/components/ui/Achievements';
+import CharityDashboard from '@/components/ui/CharityDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { 
   TrophyIcon, 
   StarIcon, 
   FireIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  HeartIcon
 } from '@heroicons/react/24/solid';
 
-type TabType = 'streams' | 'leaderboards' | 'achievements';
+type TabType = 'streams' | 'leaderboards' | 'achievements' | 'charity';
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<TabType>('streams');
@@ -79,7 +81,8 @@ export default function HomePage() {
   const tabs = [
     { id: 'streams' as TabType, label: 'Live Streams', icon: ChartBarIcon },
     { id: 'leaderboards' as TabType, label: 'Leaderboards', icon: TrophyIcon },
-    { id: 'achievements' as TabType, label: 'Achievements', icon: StarIcon }
+    { id: 'achievements' as TabType, label: 'Achievements', icon: StarIcon },
+    { id: 'charity' as TabType, label: 'Charity & Crowdfunding', icon: HeartIcon }
   ];
 
   return (
@@ -154,6 +157,10 @@ export default function HomePage() {
                   loading={loading}
                   onCheckAchievements={() => console.log('Check achievements')}
                 />
+              )}
+
+              {activeTab === 'charity' && (
+                <CharityDashboard />
               )}
             </motion.div>
 
