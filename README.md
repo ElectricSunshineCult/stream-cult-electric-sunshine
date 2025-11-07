@@ -1,4 +1,4 @@
-# STREAM CULT - Electric Sunshine Cult Advanced Gaming & Streaming Platform
+# Advanced Streaming Platform | TOKEN BASED- Electric Sunshine Cult Advanced Gaming & Streaming Platform
 
 An advanced full-stack streaming platform developed by **Corey Setzer** aka **Unknown Artist Developer & Director Of Electric Sunshine Cult** featuring user levels, experience system, enhanced leaderboards, token-based tipping, real-time chat, regional organization, and comprehensive gamification features.
 
