@@ -1,408 +1,331 @@
 const express = require('express');
-const { body, validationResult } = require('express-validator');
-const { query } = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
-const LevelService = require('../services/levelService');
-
 const router = express.Router();
+const { authenticateToken } = require('../middleware/auth');
 
-// Get user's tip history (sent)
-router.get('/sent', authenticateToken, async (req, res) => {
+// Get queued tips for user
+router.get('/queued', authenticateToken, async (req, res) => {
   try {
-    const { limit = 20, offset = 0 } = req.query;
-
-    const tipsResult = await query(`
-      SELECT 
-        t.id,
-        t.amount,
-        t.message,
-        t.action_type,
-        t.action_data,
-        t.status,
-        t.created_at,
-        s.title as stream_title,
-        s.id as stream_id,
-        u.username as streamer_name
-      FROM tips t
-      JOIN users u ON t.to_streamer_id = u.id
-      JOIN streams s ON t.stream_id = s.id
-      WHERE t.from_user_id = $1
-      ORDER BY t.created_at DESC
-      LIMIT $2 OFFSET $3
-    `, [req.user.id, limit, offset]);
-
-    res.json({
-      tips: tipsResult.rows,
-      total: tipsResult.rows.length
-    });
-
+    const { cacheService } = req.app.locals;
+    const userId = req.user.id;
+    
+    // Check cache for queued tips
+    let queuedTips = await cacheService.get(`queued_tips:${userId}`);
+    
+    if (!queuedTips) {
+      // TODO: Fetch from database
+      queuedTips = {
+        streamers: [],
+        totalQueued: 0
+      };
+      
+      // Cache for 5 minutes
+      await cacheService.set(`queued_tips:${userId}`, queuedTips, 300);
+    }
+    
+    res.json(queuedTips);
   } catch (error) {
-    console.error('Get sent tips error:', error);
-    res.status(500).json({ error: 'Failed to fetch sent tips' });
+    req.app.locals.errorService.handleError(error, req, res);
   }
 });
 
-// Get user's tip history (received)
-router.get('/received', authenticateToken, async (req, res) => {
+// Send offline tip
+router.post('/offline', authenticateToken, async (req, res) => {
   try {
-    const { limit = 20, offset = 0 } = req.query;
-
-    const tipsResult = await query(`
-      SELECT 
-        t.id,
-        t.amount,
-        t.message,
-        t.action_type,
-        t.action_data,
-        t.status,
-        t.created_at,
-        s.title as stream_title,
-        s.id as stream_id,
-        u.username as from_user_name
-      FROM tips t
-      JOIN users u ON t.from_user_id = u.id
-      JOIN streams s ON t.stream_id = s.id
-      WHERE t.to_streamer_id = $1
-      ORDER BY t.created_at DESC
-      LIMIT $2 OFFSET $3
-    `, [req.user.id, limit, offset]);
-
-    res.json({
-      tips: tipsResult.rows,
-      total: tipsResult.rows.length
-    });
-
-  } catch (error) {
-    console.error('Get received tips error:', error);
-    res.status(500).json({ error: 'Failed to fetch received tips' });
-  }
-});
-
-// Get stream tip history
-router.get('/stream/:streamId', async (req, res) => {
-  try {
-    const { streamId } = req.params;
-    const { limit = 20, offset = 0 } = req.query;
-
-    const tipsResult = await query(`
-      SELECT 
-        t.id,
-        t.amount,
-        t.message,
-        t.action_type,
-        t.action_data,
-        t.created_at,
-        u.username as from_user_name,
-        t.from_user_id
-      FROM tips t
-      JOIN users u ON t.from_user_id = u.id
-      WHERE t.stream_id = $1
-      ORDER BY t.created_at DESC
-      LIMIT $2 OFFSET $3
-    `, [streamId, limit, offset]);
-
-    res.json({
-      tips: tipsResult.rows,
-      total: tipsResult.rows.length
-    });
-
-  } catch (error) {
-    console.error('Get stream tips error:', error);
-    res.status(500).json({ error: 'Failed to fetch stream tips' });
-  }
-});
-
-// Send tip
-router.post('/send', [
-  authenticateToken,
-  body('stream_id').isInt({ min: 1 }).withMessage('Valid stream ID required'),
-  body('streamer_id').isInt({ min: 1 }).withMessage('Valid streamer ID required'),
-  body('amount').isInt({ min: 1, max: 1000000 }).withMessage('Valid amount required (1-1000000)'),
-  body('message').optional().isLength({ max: 200 }).withMessage('Message too long'),
-  body('action_type').optional().isIn(['review', 'challenge', 'request', 'custom']).withMessage('Invalid action type'),
-  body('action_data').optional().isObject().withMessage('Action data must be object')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        error: 'Validation failed',
-        details: errors.array()
-      });
+    const { cacheService, analyticsService, notificationService } = req.app.locals;
+    const userId = req.user.id;
+    const {
+      streamerId,
+      streamerUsername,
+      amount,
+      message,
+      isAnonymous,
+      category,
+      isSpecialOccasion,
+      occasionType
+    } = req.body;
+    
+    // Validate request
+    if (!streamerId || !streamerUsername || !amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid tip data' });
     }
-
-    const { stream_id, streamer_id, amount, message = '', action_type, action_data } = req.body;
-
-    // Check if stream exists and is live
-    const streamResult = await query(
-      'SELECT * FROM streams WHERE id = $1 AND is_live = true',
-      [stream_id]
-    );
-
-    if (streamResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Stream not found or not live' });
+    
+    if (amount > 10000) { // Max 10k tokens per tip
+      return res.status(400).json({ error: 'Tip amount exceeds limit' });
     }
-
-    // Check if streamer exists
-    const streamerResult = await query(
-      'SELECT id, username, role FROM users WHERE id = $1',
-      [streamer_id]
-    );
-
-    if (streamerResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Streamer not found' });
-    }
-
-    // Check if user has enough tokens
-    const userResult = await query(
-      'SELECT tokens_balance FROM users WHERE id = $1',
-      [req.user.id]
-    );
-
-    if (userResult.rows[0].tokens_balance < amount) {
-      return res.status(400).json({ 
-        error: 'Insufficient tokens',
-        required: amount,
-        available: userResult.rows[0].tokens_balance
-      });
-    }
-
-    // Start transaction
-    await query('BEGIN');
-
-    try {
-      // Create tip record
-      const tipResult = await query(`
-        INSERT INTO tips (from_user_id, to_streamer_id, stream_id, amount, message, action_type, action_data)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING *
-      `, [req.user.id, streamer_id, stream_id, amount, message, action_type, JSON.stringify(action_data || {})]);
-
-      const tip = tipResult.rows[0];
-
-      // Deduct tokens from sender
-      await query(`
-        UPDATE users 
-        SET tokens_balance = tokens_balance - $1, 
-            total_tips_sent = total_tips_sent + $1,
-            total_spent = total_spent + $1
-        WHERE id = $2
-      `, [amount, req.user.id]);
-
-      // Add tokens to streamer
-      await query(`
-        UPDATE users 
-        SET tokens_balance = tokens_balance + $1, 
-            total_tips_earned = total_tips_earned + $1,
-            total_earned = total_earned + $1
-        WHERE id = $2
-      `, [amount, streamer_id]);
-
-      // Update stream total tips
-      await query(`
-        UPDATE streams 
-        SET total_tips = total_tips + $1 
-        WHERE id = $2
-      `, [amount, stream_id]);
-
-      // Record transaction
-      await query(`
-        INSERT INTO transactions (user_id, type, amount, balance_before, balance_after, metadata)
-        VALUES ($1, 'tip_send', $2, $3, $4, $5)
-      `, [
-        req.user.id,
-        -amount,
-        userResult.rows[0].tokens_balance,
-        userResult.rows[0].tokens_balance - amount,
-        JSON.stringify({ tip_id: tip.id, streamer_id, stream_id, message, action_type })
-      ]);
-
-      const newBalance = userResult.rows[0].tokens_balance - amount;
-      await query(`
-        INSERT INTO transactions (user_id, type, amount, balance_before, balance_after, metadata)
-        VALUES ($1, 'tip_receive', $2, $3, $4, $5)
-      `, [
-        streamer_id,
-        amount,
-        null, // We'll fetch current balance
-        null,
-        JSON.stringify({ tip_id: tip.id, from_user_id: req.user.id, stream_id, message, action_type })
-      ]);
-
-      await query('COMMIT');
-
-      // Award experience points for tipping
-      try {
-        await LevelService.awardTipExperience(req.user.id, streamer_id, amount, tip.id);
-      } catch (levelError) {
-        console.error('Error awarding experience for tip:', levelError);
-        // Don't fail the tip if experience award fails
-      }
-
-      res.status(201).json({
-        message: 'Tip sent successfully',
-        tip: {
-          id: tip.id,
-          amount: tip.amount,
-          message: tip.message,
-          action_type: tip.action_type,
-          action_data: tip.action_data,
-          created_at: tip.created_at
+    
+    // Create offline tip
+    const offlineTip = {
+      id: Date.now().toString(),
+      streamerId,
+      streamerUsername,
+      tipperId: userId,
+      tipperUsername: req.user.username, // TODO: Get from user data
+      amount,
+      message: message || null,
+      isAnonymous: !!isAnonymous,
+      category: category || 'support',
+      isSpecialOccasion: !!isSpecialOccasion,
+      occasionType: isSpecialOccasion ? occasionType : null,
+      timestamp: new Date().toISOString(),
+      status: 'pending' // pending, delivered, read, responded
+    };
+    
+    // Check if streamer is online
+    const streamerStatus = await cacheService.get(`user_status:${streamerId}`);
+    const isOnline = streamerStatus && streamerStatus !== 'offline' && streamerStatus !== 'invisible';
+    
+    if (isOnline) {
+      // Streamer is online, send tip immediately
+      offlineTip.status = 'delivered';
+      
+      // Create notification for streamer
+      await notificationService.sendNotification({
+        userId: streamerId,
+        type: 'tip_received',
+        title: 'New Tip Received!',
+        message: `${isAnonymous ? 'Anonymous' : req.user.username} sent you ${amount} tokens`,
+        data: {
+          tipId: offlineTip.id,
+          amount,
+          message,
+          sender: isAnonymous ? null : req.user.username
         }
       });
-
-    } catch (error) {
-      await query('ROLLBACK');
-      throw error;
-    }
-
-  } catch (error) {
-    console.error('Send tip error:', error);
-    res.status(500).json({ error: 'Failed to send tip' });
-  }
-});
-
-// Get tip analytics for streamer
-router.get('/analytics/streamer', authenticateToken, async (req, res) => {
-  try {
-    const { period = '30d' } = req.query;
-
-    let dateFilter = '';
-    if (period === '7d') {
-      dateFilter = "AND t.created_at >= NOW() - INTERVAL '7 days'";
-    } else if (period === '30d') {
-      dateFilter = "AND t.created_at >= NOW() - INTERVAL '30 days'";
-    } else if (period === '90d') {
-      dateFilter = "AND t.created_at >= NOW() - INTERVAL '90 days'";
-    }
-
-    const analyticsResult = await query(`
-      SELECT 
-        COUNT(*) as total_tips,
-        COALESCE(SUM(t.amount), 0) as total_amount,
-        COALESCE(AVG(t.amount), 0) as average_amount,
-        COALESCE(MAX(t.amount), 0) as max_tip,
-        COUNT(DISTINCT t.from_user_id) as unique_tippers
-      FROM tips t
-      WHERE t.to_streamer_id = $1 ${dateFilter}
-    `, [req.user.id]);
-
-    const hourlyResult = await query(`
-      SELECT 
-        EXTRACT(HOUR FROM t.created_at) as hour,
-        COUNT(*) as count,
-        SUM(t.amount) as total_amount
-      FROM tips t
-      WHERE t.to_streamer_id = $1 ${dateFilter}
-      GROUP BY EXTRACT(HOUR FROM t.created_at)
-      ORDER BY hour
-    `, [req.user.id]);
-
-    const dailyResult = await query(`
-      SELECT 
-        DATE(t.created_at) as date,
-        COUNT(*) as count,
-        SUM(t.amount) as total_amount
-      FROM tips t
-      WHERE t.to_streamer_id = $1 ${dateFilter}
-      GROUP BY DATE(t.created_at)
-      ORDER BY date DESC
-      LIMIT 30
-    `, [req.user.id]);
-
-    res.json({
-      summary: analyticsResult.rows[0],
-      hourly: hourlyResult.rows,
-      daily: dailyResult.rows
-    });
-
-  } catch (error) {
-    console.error('Get tip analytics error:', error);
-    res.status(500).json({ error: 'Failed to fetch tip analytics' });
-  }
-});
-
-// Get top tippers for stream
-router.get('/stream/:streamId/tippers', async (req, res) => {
-  try {
-    const { streamId } = req.params;
-    const { limit = 10 } = req.query;
-
-    const tippersResult = await query(`
-      SELECT 
-        u.id,
-        u.username,
-        SUM(t.amount) as total_amount,
-        COUNT(t.id) as tip_count,
-        MAX(t.created_at) as last_tip
-      FROM tips t
-      JOIN users u ON t.from_user_id = u.id
-      WHERE t.stream_id = $1
-      GROUP BY u.id, u.username
-      ORDER BY total_amount DESC
-      LIMIT $2
-    `, [streamId, limit]);
-
-    res.json({ top_tippers: tippersResult.rows });
-
-  } catch (error) {
-    console.error('Get top tippers error:', error);
-    res.status(500).json({ error: 'Failed to fetch top tippers' });
-  }
-});
-
-// Tip action fulfillment (streamer fulfills tip request)
-router.post('/fulfill/:tipId', [
-  authenticateToken,
-  body('status').isIn(['completed', 'failed', 'cancelled']).withMessage('Valid status required'),
-  body('notes').optional().isLength({ max: 500 }).withMessage('Notes too long')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        error: 'Validation failed',
-        details: errors.array()
+      
+      // Track successful tip
+      await analyticsService.trackEvent('tip_sent', {
+        tipperId: userId,
+        streamerId,
+        amount,
+        isOnline: true,
+        category,
+        timestamp: new Date()
+      });
+      
+    } else {
+      // Streamer is offline, queue the tip
+      offlineTip.status = 'pending';
+      
+      // Add to user's queued tips
+      let queuedTips = await cacheService.get(`queued_tips:${userId}`);
+      if (!queuedTips) {
+        queuedTips = { streamers: {}, totalQueued: 0 };
+      }
+      
+      // Add or update streamer in queue
+      if (!queuedTips.streamers[streamerId]) {
+        queuedTips.streamers[streamerId] = {
+          streamerId,
+          streamerUsername,
+          tips: [],
+          lastSeen: new Date().toISOString()
+        };
+      }
+      
+      queuedTips.streamers[streamerId].tips.push(offlineTip);
+      queuedTips.totalQueued = Object.values(queuedTips.streamers)
+        .reduce((total, streamer) => total + streamer.tips.length, 0);
+      
+      // Update cache
+      await cacheService.set(`queued_tips:${userId}`, queuedTips, 300);
+      
+      // Add to streamer's offline tips queue
+      let streamerOfflineTips = await cacheService.get(`offline_tips:${streamerId}`);
+      if (!streamerOfflineTips) {
+        streamerOfflineTips = { tips: [] };
+      }
+      
+      streamerOfflineTips.tips.push({
+        tipId: offlineTip.id,
+        tipperId: userId,
+        tipperUsername: req.user.username,
+        amount,
+        message: message || null,
+        isAnonymous,
+        category,
+        isSpecialOccasion,
+        occasionType,
+        timestamp: new Date().toISOString()
+      });
+      
+      await cacheService.set(`offline_tips:${streamerId}`, streamerOfflineTips, 86400); // Cache for 24h
+      
+      // Track queued tip
+      await analyticsService.trackEvent('tip_queued', {
+        tipperId: userId,
+        streamerId,
+        amount,
+        isOnline: false,
+        category,
+        timestamp: new Date()
       });
     }
-
-    const { tipId } = req.params;
-    const { status, notes = '' } = req.body;
-
-    // Verify tip exists and user is the streamer
-    const tipResult = await query(`
-      SELECT t.*, s.streamer_id 
-      FROM tips t
-      JOIN streams s ON t.stream_id = s.id
-      WHERE t.id = $1
-    `, [tipId]);
-
-    if (tipResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Tip not found' });
-    }
-
-    if (tipResult.rows[0].streamer_id !== req.user.id) {
-      return res.status(403).json({ error: 'Not authorized to fulfill this tip' });
-    }
-
-    // Update tip status
-    await query(`
-      UPDATE tips 
-      SET status = $1, 
-          notes = $2,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = $3
-    `, [status, notes, tipId]);
-
+    
     res.json({
-      message: 'Tip fulfillment updated successfully',
-      tip_id: tipId,
-      status
+      success: true,
+      tip: offlineTip,
+      delivered: isOnline,
+      message: isOnline ? 'Tip delivered successfully' : 'Tip queued for offline delivery'
     });
-
+    
   } catch (error) {
-    console.error('Fulfill tip error:', error);
-    res.status(500).json({ error: 'Failed to update tip fulfillment' });
+    req.app.locals.errorService.handleError(error, req, res);
+  }
+});
+
+// Deliver queued tips when streamer comes online
+router.post('/deliver/:streamerId', authenticateToken, async (req, res) => {
+  try {
+    const { cacheService, analyticsService, notificationService } = req.app.locals;
+    const { streamerId } = req.params;
+    const userId = req.user.id;
+    
+    // Verify streamer owns this endpoint
+    if (streamerId !== userId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    // Get offline tips
+    const offlineTips = await cacheService.get(`offline_tips:${streamerId}`);
+    if (!offlineTips || !offlineTips.tips || offlineTips.tips.length === 0) {
+      return res.json({ success: true, delivered: 0, tips: [] });
+    }
+    
+    // Process each tip
+    const deliveredTips = [];
+    for (const tip of offlineTips.tips) {
+      try {
+        // Update tip status in sender's queued tips
+        const queuedTips = await cacheService.get(`queued_tips:${tip.tipperId}`);
+        if (queuedTips && queuedTips.streamers[streamerId]) {
+          const tipIndex = queuedTips.streamers[streamerId].tips.findIndex(
+            t => t.id === tip.tipId
+          );
+          
+          if (tipIndex !== -1) {
+            queuedTips.streamers[streamerId].tips[tipIndex].status = 'delivered';
+            queuedTips.streamers[streamerId].tips[tipIndex].deliveredAt = new Date().toISOString();
+            
+            // Recalculate total
+            queuedTips.totalQueued = Object.values(queuedTips.streamers)
+              .reduce((total, streamer) => total + streamer.tips.length, 0);
+            
+            await cacheService.set(`queued_tips:${tip.tipperId}`, queuedTips, 300);
+          }
+        }
+        
+        // Send notification to tipper
+        await notificationService.sendNotification({
+          userId: tip.tipperId,
+          type: 'tip_delivered',
+          title: 'Your Tip Was Delivered!',
+          message: `${tip.amount} tokens delivered to ${tip.streamerUsername}`,
+          data: {
+            tipId: tip.tipId,
+            amount: tip.amount,
+            streamerUsername
+          }
+        });
+        
+        // Track tip delivery
+        await analyticsService.trackEvent('tip_delivered', {
+          tipperId: tip.tipperId,
+          streamerId,
+          amount: tip.amount,
+          timestamp: new Date()
+        });
+        
+        deliveredTips.push(tip);
+        
+      } catch (tipError) {
+        console.error(`Error delivering tip ${tip.tipId}:`, tipError);
+      }
+    }
+    
+    // Clear offline tips queue
+    await cacheService.delete(`offline_tips:${streamerId}`);
+    
+    res.json({
+      success: true,
+      delivered: deliveredTips.length,
+      tips: deliveredTips
+    });
+    
+  } catch (error) {
+    req.app.locals.errorService.handleError(error, req, res);
+  }
+});
+
+// Cancel queued tip
+router.delete('/queued/:tipId', authenticateToken, async (req, res) => {
+  try {
+    const { cacheService, analyticsService } = req.app.locals;
+    const { tipId } = req.params;
+    const userId = req.user.id;
+    
+    // Get queued tips
+    let queuedTips = await cacheService.get(`queued_tips:${userId}`);
+    if (!queuedTips) {
+      return res.status(404).json({ error: 'No queued tips found' });
+    }
+    
+    // Find and remove the tip
+    let tipFound = false;
+    for (const streamerId of Object.keys(queuedTips.streamers)) {
+      const tipIndex = queuedTips.streamers[streamerId].tips.findIndex(
+        t => t.id === tipId && t.status === 'pending'
+      );
+      
+      if (tipIndex !== -1) {
+        const removedTip = queuedTips.streamers[streamerId].tips.splice(tipIndex, 1)[0];
+        tipFound = true;
+        
+        // If no more tips for this streamer, remove the streamer
+        if (queuedTips.streamers[streamerId].tips.length === 0) {
+          delete queuedTips.streamers[streamerId];
+        }
+        
+        break;
+      }
+    }
+    
+    if (!tipFound) {
+      return res.status(404).json({ error: 'Tip not found or already delivered' });
+    }
+    
+    // Recalculate total
+    queuedTips.totalQueued = Object.values(queuedTips.streamers)
+      .reduce((total, streamer) => total + streamer.tips.length, 0);
+    
+    // Update cache
+    await cacheService.set(`queued_tips:${userId}`, queuedTips, 300);
+    
+    // Track tip cancellation
+    await analyticsService.trackEvent('tip_cancelled', {
+      tipperId: userId,
+      tipId,
+      timestamp: new Date()
+    });
+    
+    res.json({ success: true, message: 'Tip cancelled successfully' });
+    
+  } catch (error) {
+    req.app.locals.errorService.handleError(error, req, res);
+  }
+});
+
+// Get tip analytics
+router.get('/analytics', authenticateToken, async (req, res) => {
+  try {
+    const { analyticsService } = req.app.locals;
+    const userId = req.user.id;
+    const { type = 'sent' } = req.query; // 'sent' or 'received'
+    
+    const analytics = await analyticsService.getTipAnalytics(userId, type);
+    
+    res.json(analytics);
+  } catch (error) {
+    req.app.locals.errorService.handleError(error, req, res);
   }
 });
 

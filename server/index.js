@@ -18,6 +18,10 @@ const regionRoutes = require('./routes/regions');
 const adminRoutes = require('./routes/admin');
 const paymentRoutes = require('./routes/payments');
 const levelsRoutes = require('./routes/levels');
+const profilesRoutes = require('./routes/profiles');
+const urlsRoutes = require('./routes/urls');
+const emotesRoutes = require('./routes/emotes');
+const blockedRoutes = require('./routes/blocked');
 
 // Import middleware
 const { authenticateToken } = require('./middleware/auth');
@@ -27,6 +31,10 @@ const { rateLimiter } = require('./middleware/rateLimiter');
 // Import services
 const { setupSocketHandlers } = require('./services/socketService');
 const { setupRedis } = require('./services/redisService');
+const CacheService = require('./services/cacheService');
+const ErrorService = require('./services/errorService');
+const NotificationService = require('./services/notificationService');
+const AnalyticsService = require('./services/analyticsService');
 
 const app = express();
 const server = http.createServer(app);
@@ -65,6 +73,10 @@ app.use('/api/tips', tipRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/regions', regionRoutes);
 app.use('/api/levels', levelsRoutes);
+app.use('/api/profiles', authenticateToken, profilesRoutes);
+app.use('/api/urls', urlsRoutes);
+app.use('/api/emotes', emotesRoutes);
+app.use('/api/blocked', authenticateToken, blockedRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/api/payments', paymentRoutes);
 
@@ -72,8 +84,24 @@ app.use('/api/payments', paymentRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/obs-overlay', express.static(path.join(__dirname, 'public/obs-overlay')));
 
-// Error handling middleware
-app.use(errorHandler);
+// Initialize services and inject them into app locals
+const initializeAppServices = async () => {
+  app.locals.cacheService = new CacheService();
+  app.locals.errorService = new ErrorService();
+  app.locals.notificationService = new NotificationService();
+  app.locals.analyticsService = new AnalyticsService();
+  
+  console.log('✅ Application services initialized');
+};
+
+// Initialize app services
+initializeAppServices().catch(console.error);
+
+// Error handling middleware (must be after services initialization)
+app.use(errorService.middleware());
+
+// Analytics middleware
+app.use(analyticsService.middleware());
 
 // 404 handler
 app.use('*', (req, res) => {
