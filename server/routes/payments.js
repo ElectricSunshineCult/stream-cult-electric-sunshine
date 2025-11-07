@@ -5,6 +5,7 @@ const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const LevelService = require('../services/levelService');
 const crypto = require('crypto');
+const PAYMENT_CONFIG = require('../config/payment');
 
 /**
  * Stream Cult - Enhanced Payment Processing System
@@ -26,32 +27,6 @@ const router = express.Router();
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
   : null;
-
-// Payment configuration
-const PAYMENT_CONFIG = {
-  // Token exchange rates (1 USD = X tokens for buy, X tokens = 1 USD for sell)
-  tokenRates: {
-    buy: 25.0,  // 1 USD = 25 tokens
-    sell: 0.04  // 1 token = 0.04 USD (25 tokens = 1 USD)
-  },
-  // Minimum payout amounts
-  minPayoutUSD: 10.00,
-  // Processing time (in hours)
-  payoutProcessingTime: {
-    paypal: 1,
-    bank_transfer: 3,
-    crypto: 2,
-    check: 7
-  }
-};
-
-// Platform fee structure (percentages)
-const PLATFORM_FEES = {
-  token_purchase: { platform: 5.0, admin: 2.0, moderator: 1.0, creator: 2.0 },
-  tip: { platform: 3.0, admin: 1.5, moderator: 0.5, creator: 5.0 },
-  subscription: { platform: 10.0, admin: 3.0, moderator: 2.0, creator: 0.0 },
-  payout: { platform: 2.0, admin: 0.5, moderator: 0.0, creator: 0.0 }
-};
 
 // Get token packages with enhanced information
 router.get('/token-packages', async (req, res) => {
@@ -670,6 +645,10 @@ router.post('/request-payout', [
 
       await query('COMMIT');
 
+      // Calculate estimated completion date (add business days)
+      const processingTime = PAYMENT_CONFIG.payoutProcessingTime[payout_method];
+      const estimatedCompletion = calculateBusinessDays(new Date(), processingTime.max);
+
       res.json({
         message: 'Payout request submitted successfully',
         payout: {
@@ -679,9 +658,20 @@ router.post('/request-payout', [
           platform_fee: platformFee.toFixed(2),
           admin_fee: adminFee.toFixed(2),
           net_amount: netAmount.toFixed(2),
-          processing_time_hours: PAYMENT_CONFIG.payoutProcessingTime[payout_method],
+          processing_info: {
+            min_days: processingTime.min,
+            max_days: processingTime.max,
+            description: processingTime.description,
+            note: processingTime.note
+          },
           status: 'pending',
-          estimated_completion: new Date(Date.now() + PAYMENT_CONFIG.payoutProcessingTime[payout_method] * 60 * 60 * 1000).toISOString()
+          estimated_completion: estimatedCompletion.toISOString(),
+          estimated_completion_display: estimatedCompletion.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
         }
       });
 
@@ -1120,5 +1110,30 @@ router.get('/admin/payment-history', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch payment history' });
   }
 });
+
+// Helper function to calculate business days (excluding weekends)
+function calculateBusinessDays(startDate, businessDaysToAdd) {
+  const result = new Date(startDate);
+  let daysAdded = 0;
+  
+  while (daysAdded < businessDaysToAdd) {
+    result.setDate(result.getDate() + 1);
+    
+    // Skip weekends (Saturday = 6, Sunday = 0)
+    if (result.getDay() !== 0 && result.getDay() !== 6) {
+      daysAdded++;
+    }
+  }
+  
+  return result;
+}
+
+// Helper function to format business days for display
+function formatBusinessDays(minDays, maxDays) {
+  if (minDays === maxDays) {
+    return `${minDays} business day${minDays > 1 ? 's' : ''}`;
+  }
+  return `${minDays}-${maxDays} business days`;
+}
 
 module.exports = router;

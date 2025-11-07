@@ -156,10 +156,10 @@ Users are eligible for token payouts if they:
 
 ### 6.3 Payout Processing Time
 Payout processing times based on method:
-- **PayPal:** 1-3 business days
-- **Bank Transfer:** 3-5 business days
-- **Cryptocurrency:** 2-24 hours
-- **Check:** 7-14 business days
+- **PayPal:** 1-3 business days (may take longer during peak periods or for first-time users)
+- **Bank Transfer:** 3-7 business days (international transfers may take up to 10 business days)
+- **Cryptocurrency:** 1-2 business days (network confirmation time may vary during high traffic)
+- **Check:** 7-21 business days (includes mailing time. International checks may take longer)
 
 ### 6.4 Payout Fees
 Users are responsible for payout processing fees:

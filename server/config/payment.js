@@ -23,12 +23,32 @@ module.exports = {
   minPayoutUSD: 10.00,
   minPayoutTokens: 250, // 250 tokens = $10.00
 
-  // Processing time (in hours)
+  // Processing time (in business days)
   payoutProcessingTime: {
-    paypal: 1,
-    bank_transfer: 3,
-    crypto: 2,
-    check: 7
+    paypal: {
+      min: 1,
+      max: 3,
+      description: "1-3 business days",
+      note: "May take longer during peak periods or for first-time users"
+    },
+    bank_transfer: {
+      min: 3,
+      max: 7,
+      description: "3-7 business days", 
+      note: "International transfers may take up to 10 business days"
+    },
+    crypto: {
+      min: 1,
+      max: 2,
+      description: "1-2 business days",
+      note: "Network confirmation time may vary during high traffic"
+    },
+    check: {
+      min: 7,
+      max: 21,
+      description: "7-21 business days",
+      note: "Includes mailing time. International checks may take longer."
+    }
   },
 
   // Platform fee structure (percentages)
@@ -154,31 +174,59 @@ module.exports = {
   payoutMethods: {
     paypal: {
       name: 'PayPal',
-      processingTime: 1,
+      processingTime: {
+        min: 1,
+        max: 3,
+        description: "1-3 business days"
+      },
       requiresEmail: true,
       minAmount: 10.00,
-      maxAmount: 10000.00
+      maxAmount: 10000.00,
+      description: "Fast transfer to your PayPal account",
+      fees: "No additional fees from Stream Cult. PayPal may charge their own fees.",
+      notes: "May take longer during peak periods or for first-time users. International transfers may be subject to exchange rates."
     },
     bank_transfer: {
       name: 'Bank Transfer',
-      processingTime: 3,
+      processingTime: {
+        min: 3,
+        max: 7,
+        description: "3-7 business days"
+      },
       requiresDetails: true,
       minAmount: 25.00,
-      maxAmount: 50000.00
+      maxAmount: 50000.00,
+      description: "Direct transfer to your bank account",
+      fees: "No additional fees from Stream Cult. Your bank may charge incoming wire fees.",
+      notes: "International transfers may take up to 10 business days. Requires verified bank account information."
     },
     crypto: {
       name: 'Cryptocurrency',
-      processingTime: 2,
+      processingTime: {
+        min: 1,
+        max: 2,
+        description: "1-2 business days"
+      },
       requiresAddress: true,
       minAmount: 10.00,
-      maxAmount: 100000.00
+      maxAmount: 100000.00,
+      description: "Transfer to your cryptocurrency wallet",
+      fees: "No additional fees from Stream Cult. Network transaction fees may apply.",
+      notes: "Network confirmation time may vary during high traffic. You are responsible for any conversion fees."
     },
     check: {
       name: 'Check',
-      processingTime: 7,
+      processingTime: {
+        min: 7,
+        max: 21,
+        description: "7-21 business days"
+      },
       requiresAddress: true,
       minAmount: 50.00,
-      maxAmount: 10000.00
+      maxAmount: 10000.00,
+      description: "Physical check sent by mail",
+      fees: "No additional fees from Stream Cult. Bank may charge check-cashing fees.",
+      notes: "Includes mailing time. International checks may take longer. Ensure address is accurate and secure."
     }
   },
 

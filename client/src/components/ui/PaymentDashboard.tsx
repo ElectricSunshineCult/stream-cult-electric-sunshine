@@ -358,11 +358,36 @@ const PaymentDashboard: React.FC = () => {
                       onChange={(e) => setPayoutMethod(e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded-md"
                     >
-                      <option value="paypal">PayPal</option>
-                      <option value="bank_transfer">Bank Transfer</option>
-                      <option value="crypto">Cryptocurrency</option>
-                      <option value="check">Check</option>
+                      <option value="paypal">PayPal (1-3 business days)</option>
+                      <option value="bank_transfer">Bank Transfer (3-7 business days)</option>
+                      <option value="crypto">Cryptocurrency (1-2 business days)</option>
+                      <option value="check">Check (7-21 business days)</option>
                     </select>
+                    
+                    {/* Processing time information */}
+                    <div className="mt-2 p-3 bg-blue-50 rounded-md">
+                      <div className="flex items-start space-x-2">
+                        <Clock className="h-4 w-4 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">
+                            Processing Time: {
+                              payoutMethod === 'paypal' ? '1-3 business days' :
+                              payoutMethod === 'bank_transfer' ? '3-7 business days' :
+                              payoutMethod === 'crypto' ? '1-2 business days' :
+                              '7-21 business days'
+                            }
+                          </p>
+                          <p className="text-xs text-blue-700 mt-1">
+                            {
+                              payoutMethod === 'paypal' ? 'May take longer during peak periods or for first-time users' :
+                              payoutMethod === 'bank_transfer' ? 'International transfers may take up to 10 business days' :
+                              payoutMethod === 'crypto' ? 'Network confirmation time may vary during high traffic' :
+                              'Includes mailing time. International checks may take longer.'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
