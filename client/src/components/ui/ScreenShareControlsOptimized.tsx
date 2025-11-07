@@ -29,10 +29,13 @@ import {
   Palette,
   CheckCircle,
   AlertCircle,
-  Activity
+  Activity,
+  Scissors,
+  Film
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from '@/themes/ThemeProvider';
+import StreamClipper from './StreamClipper';
 
 // Performance optimization constants
 const PERFORMANCE_THRESHOLDS = {
@@ -316,6 +319,7 @@ interface ScreenShareState {
   isFullscreen: boolean;
   error: string | null;
   isOptimizing: boolean;
+  activeTab: 'share' | 'clip';
 }
 
 // Main Screen Share Controls Component
@@ -343,7 +347,8 @@ const ScreenShareControls: React.FC<ScreenShareControlsProps> = memo(({
     description: '',
     isFullscreen: false,
     error: null,
-    isOptimizing: false
+    isOptimizing: false,
+    activeTab: 'share'
   });
 
   const streamRef = useRef<MediaStream | null>(null);
@@ -779,7 +784,7 @@ const ScreenShareControls: React.FC<ScreenShareControlsProps> = memo(({
         <CardHeader>
           <CardTitle className="flex items-center gap-2" style={{ color: currentTheme.colors.text }}>
             <MonitorShare className="h-5 w-5" style={{ color: currentTheme.colors.primary }} />
-            Screen Sharing Controls
+            Screen Sharing & Clipping
             {state.isOptimizing && (
               <Badge className="ml-auto" style={{ backgroundColor: currentTheme.colors.warning, color: currentTheme.colors.text }}>
                 <Zap className="h-3 w-3 mr-1" />
@@ -788,89 +793,160 @@ const ScreenShareControls: React.FC<ScreenShareControlsProps> = memo(({
             )}
           </CardTitle>
           <CardDescription style={{ color: currentTheme.colors.textSecondary }}>
-            Share your screen with performance optimization
+            Share your screen and create clips with performance optimization
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {state.error && (
-            <div 
-              className="p-3 rounded-md text-sm flex items-center gap-2"
-              style={{ 
-                backgroundColor: currentTheme.colors.error + '20',
-                border: `1px solid ${currentTheme.colors.error}`,
-                color: currentTheme.colors.error
+          {/* Tab Navigation */}
+          <div className="flex border-b" style={{ borderColor: currentTheme.colors.border }}>
+            <Button
+              variant={state.activeTab === 'share' ? 'default' : 'ghost'}
+              onClick={() => setState(prev => ({ ...prev, activeTab: 'share' }))}
+              className="flex items-center gap-2 rounded-none border-b-2"
+              style={{
+                borderColor: state.activeTab === 'share' ? currentTheme.colors.primary : 'transparent',
+                backgroundColor: state.activeTab === 'share' ? currentTheme.colors.primary + '20' : 'transparent',
+                color: currentTheme.colors.text
               }}
             >
-              <AlertCircle className="h-4 w-4" />
-              {state.error}
+              <MonitorShare className="h-4 w-4" />
+              Screen Share
+            </Button>
+            <Button
+              variant={state.activeTab === 'clip' ? 'default' : 'ghost'}
+              onClick={() => setState(prev => ({ ...prev, activeTab: 'clip' }))}
+              className="flex items-center gap-2 rounded-none border-b-2"
+              style={{
+                borderColor: state.activeTab === 'clip' ? currentTheme.colors.primary : 'transparent',
+                backgroundColor: state.activeTab === 'clip' ? currentTheme.colors.primary + '20' : 'transparent',
+                color: currentTheme.colors.text
+              }}
+            >
+              <Scissors className="h-4 w-4" />
+              Create Clips
+            </Button>
+          </div>
+
+          {/* Tab Content */}
+          {state.activeTab === 'share' && (
+            <div className="space-y-4">
+              {state.error && (
+                <div 
+                  className="p-3 rounded-md text-sm flex items-center gap-2"
+                  style={{ 
+                    backgroundColor: currentTheme.colors.error + '20',
+                    border: `1px solid ${currentTheme.colors.error}`,
+                    color: currentTheme.colors.error
+                  }}
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  {state.error}
+                </div>
+              )}
+
+              {SessionControls}
+              {AudioControls}
+
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="share-title" style={{ color: currentTheme.colors.text }}>
+                    Session Title
+                  </Label>
+                  <Input
+                    id="share-title"
+                    value={state.streamTitle}
+                    onChange={(e) => setState(prev => ({ ...prev, streamTitle: e.target.value }))}
+                    placeholder="What are you sharing?"
+                    disabled={state.isSharing}
+                    maxLength={100}
+                    style={{ 
+                      backgroundColor: currentTheme.colors.background,
+                      borderColor: currentTheme.colors.border,
+                      color: currentTheme.colors.text
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="share-description" style={{ color: currentTheme.colors.text }}>
+                    Description (Optional)
+                  </Label>
+                  <Textarea
+                    id="share-description"
+                    value={state.description}
+                    onChange={(e) => setState(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe what you're showing..."
+                    disabled={state.isSharing}
+                    rows={2}
+                    maxLength={500}
+                    style={{ 
+                      backgroundColor: currentTheme.colors.background,
+                      borderColor: currentTheme.colors.border,
+                      color: currentTheme.colors.text
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                {!state.isSharing ? (
+                  <Button 
+                    onClick={startScreenShare} 
+                    className="flex-1 flex items-center gap-2"
+                    style={{ backgroundColor: currentTheme.colors.primary }}
+                  >
+                    <Play className="h-4 w-4" />
+                    Start Screen Share
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={stopScreenShare} 
+                    variant="destructive" 
+                    className="flex-1 flex items-center gap-2"
+                  >
+                    <Square className="h-4 w-4" />
+                    Stop Screen Share
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
-          {SessionControls}
-          {AudioControls}
-
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="share-title" style={{ color: currentTheme.colors.text }}>
-                Session Title
-              </Label>
-              <Input
-                id="share-title"
-                value={state.streamTitle}
-                onChange={(e) => setState(prev => ({ ...prev, streamTitle: e.target.value }))}
-                placeholder="What are you sharing?"
-                disabled={state.isSharing}
-                maxLength={100}
-                style={{ 
-                  backgroundColor: currentTheme.colors.background,
-                  borderColor: currentTheme.colors.border,
-                  color: currentTheme.colors.text
-                }}
-              />
+          {state.activeTab === 'clip' && (
+            <div className="space-y-4">
+              {state.isSharing ? (
+                <StreamClipper
+                  streamId={streamId}
+                  isStreaming={state.isSharing}
+                  streamUrl={state.currentSession?.streamUrl}
+                  onClipSave={(clip) => {
+                    toast({
+                      title: "Clip Created!",
+                      description: "Your clip has been saved successfully"
+                    });
+                  }}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <Film className="h-12 w-12 mx-auto mb-4" style={{ color: currentTheme.colors.textSecondary }} />
+                  <h3 className="text-lg font-semibold mb-2" style={{ color: currentTheme.colors.text }}>
+                    Start Screen Sharing to Create Clips
+                  </h3>
+                  <p className="text-sm mb-4" style={{ color: currentTheme.colors.textSecondary }}>
+                    Begin a screen sharing session to record and create clips from your stream
+                  </p>
+                  <Button 
+                    onClick={() => setState(prev => ({ ...prev, activeTab: 'share' }))}
+                    className="flex items-center gap-2"
+                    style={{ backgroundColor: currentTheme.colors.primary }}
+                  >
+                    <MonitorShare className="h-4 w-4" />
+                    Go to Screen Share
+                  </Button>
+                </div>
+              )}
             </div>
-
-            <div>
-              <Label htmlFor="share-description" style={{ color: currentTheme.colors.text }}>
-                Description (Optional)
-              </Label>
-              <Textarea
-                id="share-description"
-                value={state.description}
-                onChange={(e) => setState(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Describe what you're showing..."
-                disabled={state.isSharing}
-                rows={2}
-                maxLength={500}
-                style={{ 
-                  backgroundColor: currentTheme.colors.background,
-                  borderColor: currentTheme.colors.border,
-                  color: currentTheme.colors.text
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            {!state.isSharing ? (
-              <Button 
-                onClick={startScreenShare} 
-                className="flex-1 flex items-center gap-2"
-                style={{ backgroundColor: currentTheme.colors.primary }}
-              >
-                <Play className="h-4 w-4" />
-                Start Screen Share
-              </Button>
-            ) : (
-              <Button 
-                onClick={stopScreenShare} 
-                variant="destructive" 
-                className="flex-1 flex items-center gap-2"
-              >
-                <Square className="h-4 w-4" />
-                Stop Screen Share
-              </Button>
-            )}
-          </div>
+          )}
         </CardContent>
       </Card>
 
