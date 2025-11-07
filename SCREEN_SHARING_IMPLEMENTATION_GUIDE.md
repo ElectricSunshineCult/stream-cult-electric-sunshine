@@ -269,11 +269,18 @@ const StreamSettings = ({ streamData }) => {
 - **Firefox**: Full support
 - **Safari**: Full support (macOS/iOS)
 - **Edge**: Full support
+- **Opera**: Full support
 
 ### Required Permissions
 Users will be prompted for screen sharing permission:
 - **getDisplayMedia API**: Browser permission prompt
 - **Microphone access**: If microphone sharing is enabled
+
+### Browser-Specific Notes
+- **Opera**: Full WebRTC support with native screen sharing capabilities
+- **Safari**: May require additional permissions for audio sharing on macOS
+- **Chrome/Edge**: Optimized for high-quality screen sharing with hardware acceleration
+- **Firefox**: Excellent performance with built-in codec support
 
 ## Security Considerations
 

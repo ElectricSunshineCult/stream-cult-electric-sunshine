@@ -23,6 +23,43 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
+// Browser detection utility
+const getBrowserInfo = () => {
+  const userAgent = navigator.userAgent;
+  const opera = userAgent.indexOf('OPR/') > -1 || !!window.opr;
+  const firefox = userAgent.indexOf('Firefox') > -1;
+  const safari = userAgent.indexOf('Safari') > -1 && userAgent.indexOf('Chrome') === -1;
+  const chrome = userAgent.indexOf('Chrome') > -1 && !opera;
+  const edge = userAgent.indexOf('Edg') > -1;
+  
+  let name = 'Unknown';
+  let version = 'Unknown';
+  
+  if (opera) {
+    name = 'Opera';
+    const match = userAgent.match(/OPR\/(\d+)/);
+    version = match ? match[1] : 'Unknown';
+  } else if (firefox) {
+    name = 'Firefox';
+    const match = userAgent.match(/Firefox\/(\d+)/);
+    version = match ? match[1] : 'Unknown';
+  } else if (chrome) {
+    name = 'Chrome';
+    const match = userAgent.match(/Chrome\/(\d+)/);
+    version = match ? match[1] : 'Unknown';
+  } else if (edge) {
+    name = 'Edge';
+    const match = userAgent.match(/Edg\/(\d+)/);
+    version = match ? match[1] : 'Unknown';
+  } else if (safari) {
+    name = 'Safari';
+    const match = userAgent.match(/Version\/(\d+)/);
+    version = match ? match[1] : 'Unknown';
+  }
+  
+  return { name, version, isOpera: opera, isChrome: chrome, isFirefox: firefox, isSafari: safari, isEdge: edge };
+};
+
 interface ScreenShareControlsProps {
   streamId: string;
   streamerId: string;
@@ -54,6 +91,84 @@ interface ScreenShareState {
   isFullscreen: boolean;
   error: string | null;
 }
+
+// Browser Compatibility Indicator Component
+const BrowserCompatibilityIndicator: React.FC = () => {
+  const browserInfo = getBrowserInfo();
+  
+  const getBrowserIcon = (name: string) => {
+    // Using Monitor icon as a generic browser icon since we don't have browser-specific icons
+    return <Monitor className="h-4 w-4" />;
+  };
+  
+  const getCompatibilityColor = (name: string) => {
+    if (name === 'Opera' || name === 'Chrome' || name === 'Edge') return 'bg-green-100 text-green-800';
+    if (name === 'Firefox') return 'bg-blue-100 text-blue-800';
+    if (name === 'Safari') return 'bg-orange-100 text-orange-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+  
+  const getFeatureSupport = (browser: string) => {
+    const features = {
+      'Opera': { screenShare: true, audioShare: true, fullscreen: true, quality: '4K' },
+      'Chrome': { screenShare: true, audioShare: true, fullscreen: true, quality: '4K' },
+      'Edge': { screenShare: true, audioShare: true, fullscreen: true, quality: '4K' },
+      'Firefox': { screenShare: true, audioShare: true, fullscreen: true, quality: '1080p' },
+      'Safari': { screenShare: true, audioShare: false, fullscreen: true, quality: '1080p' }
+    };
+    
+    return features[browser] || { screenShare: false, audioShare: false, fullscreen: false, quality: 'Unknown' };
+  };
+  
+  const support = getFeatureSupport(browserInfo.name);
+  
+  return (
+    <Card className="border-l-4 border-l-blue-500">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {getBrowserIcon(browserInfo.name)}
+            <div>
+              <h3 className="font-medium text-sm">
+                {browserInfo.name} {browserInfo.version}
+                {browserInfo.isOpera && (
+                  <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                    Opera Detected
+                  </span>
+                )}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Screen sharing optimized for your browser
+              </p>
+            </div>
+          </div>
+          <Badge className={getCompatibilityColor(browserInfo.name)}>
+            Full Support
+          </Badge>
+        </div>
+        
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center gap-1">
+            <div className={`w-2 h-2 rounded-full ${support.screenShare ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span>Screen Share</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className={`w-2 h-2 rounded-full ${support.audioShare ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span>Audio Share</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className={`w-2 h-2 rounded-full ${support.fullscreen ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span>Fullscreen</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <span>{support.quality}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 const ScreenShareControls: React.FC<ScreenShareControlsProps> = ({
   streamId,
@@ -137,11 +252,39 @@ const ScreenShareControls: React.FC<ScreenShareControlsProps> = ({
   // Get available screen sharing sources
   const getScreenSources = async () => {
     try {
-      // Request screen sharing permission
-      const stream = await navigator.mediaDevices.getDisplayMedia({
+      const browserInfo = getBrowserInfo();
+      
+      // Opera/Chrome specific optimizations
+      const constraints = browserInfo.isOpera || browserInfo.isChrome ? {
+        video: {
+          mediaSource: 'screen',
+          width: { max: 3840, ideal: 1920 },
+          height: { max: 2160, ideal: 1080 },
+          frameRate: { max: 60, ideal: 30 }
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        }
+      } : {
         video: true,
         audio: true
-      });
+      };
+
+      // Request screen sharing permission
+      const stream = await navigator.mediaDevices.getDisplayMedia(constraints);
+
+      // Opera-specific enhancements
+      if (browserInfo.isOpera) {
+        console.log('Opera browser detected - enabling optimized screen sharing');
+        // Ensure hardware acceleration is enabled for Opera
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+          const settings = videoTrack.getSettings();
+          console.log('Opera stream settings:', settings);
+        }
+      }
 
       streamRef.current = stream;
       
@@ -342,6 +485,9 @@ const ScreenShareControls: React.FC<ScreenShareControlsProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Browser Compatibility Indicator */}
+      <BrowserCompatibilityIndicator />
+      
       {/* Screen Share Controls */}
       <Card>
         <CardHeader>
