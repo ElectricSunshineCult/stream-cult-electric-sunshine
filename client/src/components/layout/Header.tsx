@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
+import UserLevel from '@/components/ui/UserLevel';
 
 export function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -63,7 +64,7 @@ export function Header() {
                   <TvIcon className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-xl font-bold gradient-text hidden sm:block">
-                  The Stream Cult
+                  TOKEN BASED STREAMING PROGRAM
                 </span>
               </div>
             </Link>
@@ -135,6 +136,19 @@ export function Header() {
                             {user.tokens_balance.toLocaleString()} CULT
                           </div>
                         )}
+                        {/* Level Information */}
+                        <div className="mt-2">
+                          <UserLevel
+                            level={1}
+                            title="Newbie"
+                            badge_icon="🥉"
+                            experience_points={0}
+                            exp_to_next_level={100}
+                            experience_required={100}
+                            size="sm"
+                            showProgress={true}
+                          />
+                        </div>
                       </div>
                       
                       <Link

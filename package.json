@@ -1,7 +1,7 @@
 {
-  "name": "the-stream-cult",
-  "version": "1.0.0",
-  "description": "Token-driven livestreaming platform",
+  "name": "token-based-streaming-program",
+  "version": "2.0.0",
+  "description": "Advanced token-based streaming platform with user levels, experience system, enhanced leaderboards, and improved performance",
   "main": "server/index.js",
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
@@ -13,7 +13,7 @@
     "db:migrate": "cd server && npm run migrate",
     "db:seed": "cd server && npm run seed"
   },
-  "keywords": ["streaming", "livestream", "token", "tipping", "cult"],
+  "keywords": ["streaming", "livestream", "token", "tipping", "levels", "experience", "leaderboards"],
   "author": "MiniMax Agent",
   "license": "MIT",
   "devDependencies": {

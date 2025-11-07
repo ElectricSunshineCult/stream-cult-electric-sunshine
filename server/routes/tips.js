@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const LevelService = require('../services/levelService');
 
 const router = express.Router();
 
@@ -183,7 +184,8 @@ router.post('/send', [
       await query(`
         UPDATE users 
         SET tokens_balance = tokens_balance - $1, 
-            total_tips_sent = total_tips_sent + $1 
+            total_tips_sent = total_tips_sent + $1,
+            total_spent = total_spent + $1
         WHERE id = $2
       `, [amount, req.user.id]);
 
@@ -191,7 +193,8 @@ router.post('/send', [
       await query(`
         UPDATE users 
         SET tokens_balance = tokens_balance + $1, 
-            total_tips_earned = total_tips_earned + $1 
+            total_tips_earned = total_tips_earned + $1,
+            total_earned = total_earned + $1
         WHERE id = $2
       `, [amount, streamer_id]);
 
@@ -227,6 +230,14 @@ router.post('/send', [
       ]);
 
       await query('COMMIT');
+
+      // Award experience points for tipping
+      try {
+        await LevelService.awardTipExperience(req.user.id, streamer_id, amount, tip.id);
+      } catch (levelError) {
+        console.error('Error awarding experience for tip:', levelError);
+        // Don't fail the tip if experience award fails
+      }
 
       res.status(201).json({
         message: 'Tip sent successfully',

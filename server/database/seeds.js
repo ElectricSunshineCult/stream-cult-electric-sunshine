@@ -129,10 +129,120 @@ const seedTestStreamers = async () => {
   console.log('✅ Test streamers seeded (password: streamer123)');
 };
 
+const seedUserLevels = async () => {
+  const levels = [
+    { level: 1, title: 'Newbie', experience_required: 0, badge_icon: '🥉', perks: ['Basic chat', 'Watch streams'] },
+    { level: 2, title: 'Viewer', experience_required: 100, badge_icon: '🥈', perks: ['Basic chat', 'Watch streams', 'Send small tips'] },
+    { level: 3, title: 'Supporter', experience_required: 500, badge_icon: '🥇', perks: ['Chat badges', 'Send tips', 'Custom emotes'] },
+    { level: 4, title: 'Fan', experience_required: 1500, badge_icon: '💎', perks: ['Priority support', 'Exclusive emotes', 'Ad-free experience'] },
+    { level: 5, title: 'Elite', experience_required: 5000, badge_icon: '👑', perks: ['All perks', 'VIP chat color', 'Early access features'] },
+    { level: 6, title: 'Legend', experience_required: 15000, badge_icon: '🏆', perks: ['Legend status', 'Custom badges', 'Special privileges'] },
+    { level: 7, title: 'Master', experience_required: 50000, badge_icon: '⭐', perks: ['Master badge', 'Exclusive events', 'Direct contact'] },
+    { level: 8, title: 'Grandmaster', experience_required: 150000, badge_icon: '🌟', perks: ['Grandmaster perks', 'Custom features', 'Beta access'] },
+    { level: 9, title: 'Champion', experience_required: 500000, badge_icon: '💫', perks: ['Champion benefits', 'Personal manager', 'Custom requests'] },
+    { level: 10, title: 'Immortal', experience_required: 1500000, badge_icon: '🚀', perks: ['All benefits', 'Immortal status', 'Platform influence'] }
+  ];
+
+  for (const level of levels) {
+    await query(`
+      INSERT INTO user_levels (level, title, experience_required, badge_icon, perks)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (level) DO NOTHING
+    `, [level.level, level.title, level.experience_required, level.badge_icon, JSON.stringify(level.perks)]);
+  }
+  console.log('✅ User levels seeded');
+};
+
+const seedAchievements = async () => {
+  const achievements = [
+    {
+      name: 'First Steps',
+      description: 'Complete your profile and verify your account',
+      badge_icon: '👤',
+      experience_reward: 50,
+      requirements: JSON.stringify({ profile_completed: true, email_verified: true })
+    },
+    {
+      name: 'Generous Soul',
+      description: 'Send your first tip to a streamer',
+      badge_icon: '💝',
+      experience_reward: 100,
+      requirements: JSON.stringify({ tips_sent: 1 })
+    },
+    {
+      name: 'Community Member',
+      description: 'Send 100 messages in chat',
+      badge_icon: '💬',
+      experience_reward: 200,
+      requirements: JSON.stringify({ messages_sent: 100 })
+    },
+    {
+      name: 'Level Climber',
+      description: 'Reach level 5',
+      badge_icon: '🧗',
+      experience_reward: 500,
+      requirements: JSON.stringify({ user_level: 5 })
+    },
+    {
+      name: 'Night Owl',
+      description: 'Watch 50 hours of content',
+      badge_icon: '🦉',
+      experience_reward: 300,
+      requirements: JSON.stringify({ watch_time_hours: 50 })
+    },
+    {
+      name: 'Big Spender',
+      description: 'Spend 10,000 tokens',
+      badge_icon: '💰',
+      experience_reward: 1000,
+      requirements: JSON.stringify({ total_spent: 10000 })
+    },
+    {
+      name: 'Popular Streamer',
+      description: 'Receive 1,000 tips',
+      badge_icon: '🌟',
+      experience_reward: 2000,
+      requirements: JSON.stringify({ tips_received: 1000 })
+    },
+    {
+      name: 'Marathon Watcher',
+      description: 'Watch a 24-hour stream',
+      badge_icon: '⏰',
+      experience_reward: 500,
+      requirements: JSON.stringify({ single_stream_duration: 24 })
+    },
+    {
+      name: 'Early Adopter',
+      description: 'Join during the beta period',
+      badge_icon: '🚀',
+      experience_reward: 1000,
+      requirements: JSON.stringify({ join_date_before: '2025-01-01' })
+    },
+    {
+      name: 'Streak Master',
+      description: 'Maintain a 30-day login streak',
+      badge_icon: '🔥',
+      experience_reward: 1500,
+      requirements: JSON.stringify({ login_streak: 30 })
+    }
+  ];
+
+  for (const achievement of achievements) {
+    await query(`
+      INSERT INTO achievements (name, description, badge_icon, experience_reward, requirements)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (name) DO NOTHING
+    `, [achievement.name, achievement.description, achievement.badge_icon, achievement.experience_reward, achievement.requirements]);
+  }
+  console.log('✅ Achievements seeded');
+};
+
 const runSeeds = async () => {
   try {
     await seedRegions();
     await seedCategories();
+    await seedUserLevels();
+    await seedAchievements();
     await seedAdminUser();
     await seedTestStreamers();
     console.log('✅ All seeds completed successfully');
@@ -146,6 +256,8 @@ module.exports = {
   runSeeds,
   seedRegions,
   seedCategories,
+  seedUserLevels,
+  seedAchievements,
   seedAdminUser,
   seedTestStreamers
 };

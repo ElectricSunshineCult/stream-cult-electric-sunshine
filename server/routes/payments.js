@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const Stripe = require('stripe');
 const { query } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const LevelService = require('../services/levelService');
 
 const router = express.Router();
 
@@ -188,8 +189,8 @@ router.post('/confirm-payment', [
     try {
       // Add tokens to user account
       await query(
-        'UPDATE users SET tokens_balance = $1 WHERE id = $2',
-        [newBalance, req.user.id]
+        'UPDATE users SET tokens_balance = $1, total_spent = total_spent + $2 WHERE id = $3',
+        [newBalance, parseInt(tokens), req.user.id]
       );
 
       // Record transaction
@@ -210,6 +211,14 @@ router.post('/confirm-payment', [
       ]);
 
       await query('COMMIT');
+
+      // Award experience points for token purchase
+      try {
+        await LevelService.awardTokenPurchaseExperience(req.user.id, parseInt(tokens), payment_intent_id);
+      } catch (levelError) {
+        console.error('Error awarding experience for token purchase:', levelError);
+        // Don't fail the payment if experience award fails
+      }
 
       res.json({
         message: 'Tokens added successfully',

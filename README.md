@@ -1,8 +1,8 @@
-# The Stream Cult - Token-Driven Livestreaming Platform
+# TOKEN BASED STREAMING PROGRAM - Advanced Gaming & Streaming Platform
 
-A comprehensive full-stack livestreaming platform with token-based tipping, real-time chat, regional organization, and multi-role user management.
+An advanced full-stack streaming platform with user levels, experience system, enhanced leaderboards, token-based tipping, real-time chat, regional organization, and comprehensive gamification features.
 
-![The Stream Cult](https://img.shields.io/badge/Platform-Live%20Streaming-purple)
+![TOKEN BASED STREAMING PROGRAM](https://img.shields.io/badge/Platform-Token%20Based%20Streaming-purple)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Node.js](https://img.shields.io/badge/Node.js-18+-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue)
@@ -18,6 +18,16 @@ A comprehensive full-stack livestreaming platform with token-based tipping, real
 - **NSFW Content Gating**: Age verification and content filtering
 - **Payment Processing**: Stripe integration for token purchases
 - **Admin Dashboard**: Comprehensive platform management tools
+
+### 🏆 Gamification & User Experience
+- **User Level System**: 10 progressive levels from Newbie to Immortal
+- **Experience Points**: Earn XP through token purchases, tips, watching, and streaming
+- **Achievement System**: 10+ unique achievements with badges and rewards
+- **Enhanced Leaderboards**: Multiple categories (Experience, Spending, Earning, Watch Time, Stream Time)
+- **Progress Tracking**: Detailed analytics and user statistics
+- **Daily Streaks**: Login and activity streak rewards
+- **Level Benefits**: Progressive perks and privileges based on user level
+- **Performance Optimized**: Fast loading, lazy loading, and optimized rendering
 
 ### User Features
 - **Stream Discovery**: Browse live streams by region and category

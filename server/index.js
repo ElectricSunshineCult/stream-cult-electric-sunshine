@@ -17,6 +17,7 @@ const chatRoutes = require('./routes/chat');
 const regionRoutes = require('./routes/regions');
 const adminRoutes = require('./routes/admin');
 const paymentRoutes = require('./routes/payments');
+const levelsRoutes = require('./routes/levels');
 
 // Import middleware
 const { authenticateToken } = require('./middleware/auth');
@@ -63,6 +64,7 @@ app.use('/api/streams', streamRoutes);
 app.use('/api/tips', tipRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/regions', regionRoutes);
+app.use('/api/levels', levelsRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/api/payments', paymentRoutes);
 
