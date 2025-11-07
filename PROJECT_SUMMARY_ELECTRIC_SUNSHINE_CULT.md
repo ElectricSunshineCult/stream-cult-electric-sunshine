@@ -4,7 +4,7 @@
 
 **Corey Setzer** - *Unknown Artist Developer & Director Of Electric Sunshine Cult*
 
-- **Email:** unknown@electricsunshinecult.com
+- **Email:** info@electricsunshinecult.com
 - **Organization:** Electric Sunshine Cult
 - **Project:** Stream Cult - Advanced Streaming Platform
 - **Copyright:** (c) 2025 Electric Sunshine Cult
@@ -314,11 +314,11 @@ This project is proprietary software owned by Electric Sunshine Cult and Corey S
 ```
 Copyright (c) 2025 Corey Setzer - Electric Sunshine Cult
 Unknown Artist Developer & Director Of Electric Sunshine Cult
-Contact: unknown@electricsunshinecult.com
+Contact: info@electricsunshinecult.com
 ```
 
 ### Contact Information
-- **Primary Contact:** unknown@electricsunshinecult.com
+- **Primary Contact:** info@electricsunshinecult.com
 - **Organization:** Electric Sunshine Cult
 - **Developer:** Corey Setzer
 - **Title:** Unknown Artist Developer & Director Of Electric Sunshine Cult
@@ -391,7 +391,7 @@ Contact: unknown@electricsunshinecult.com
 ### Support
 For technical support, licensing inquiries, or partnership opportunities:
 
-**Email:** unknown@electricsunshinecult.com
+**Email:** info@electricsunshinecult.com
 **Subject:** Electric Sunshine Cult - [Your Inquiry Type]
 
 ## 📝 Legal Notice

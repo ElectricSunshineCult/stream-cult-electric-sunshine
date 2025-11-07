@@ -24,7 +24,7 @@ LICENSING TERMS:
 4. ATTRIBUTION REQUIRED: Any use of this software MUST include:
    - Copyright notice: "Copyright (c) 2025 Corey Setzer - Electric Sunshine Cult"
    - Developer attribution: "Developed by Corey Setzer aka Unknown Artist Developer & Director Of Electric Sunshine Cult"
-   - Contact information: "unknown@electricsunshinecult.com"
+   - Contact information: "info@electricsunshinecult.com"
    - Electric Sunshine Cult branding and attribution
 
 5. ENFORCEMENT: Electric Sunshine Cult reserves the right to enforce this license through:
@@ -34,7 +34,7 @@ LICENSING TERMS:
    - Pursuit of damages and legal fees
 
 6. CONTACT FOR LICENSING: For commercial licensing, partnerships, or usage inquiries:
-   - Email: unknown@electricsunshinecult.com
+   - Email: info@electricsunshinecult.com
    - Subject: "Electric Sunshine Cult Software Licensing"
 
 DISCLAIMER:

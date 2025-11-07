@@ -6,7 +6,7 @@ An advanced full-stack streaming platform developed by **Corey Setzer** aka **Un
 
 *This software is proprietary and confidential. Unauthorized reproduction, distribution, or use of this software is strictly prohibited. Electric Sunshine Cult reserves all rights to this intellectual property.*
 
-**For licensing inquiries, contact: unknown@electricsunshinecult.com**
+**For licensing inquiries, contact: info@electricsunshinecult.com**
 
 ![STREAM CULT](https://img.shields.io/badge/Platform-Electric%20Sunshine%20Cult-purple)
 ![License](https://img.shields.io/badge/License-PROPRIETARY-red)

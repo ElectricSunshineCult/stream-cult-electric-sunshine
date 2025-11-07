@@ -9,7 +9,7 @@
  * 
  * Electric Sunshine Cult reserves all rights to this intellectual property.
  * 
- * For licensing inquiries, contact: unknown@electricsunshinecult.com
+ * For licensing inquiries, contact: info@electricsunshinecult.com
  * 
  * ELECTRIC SUNSHINE CULT MARK - This code is protected under the Electric Sunshine Cult brand
  * Any unauthorized use will result in immediate legal action.

@@ -9,7 +9,7 @@
  * 
  * Electric Sunshine Cult reserves all rights to this intellectual property.
  * 
- * For licensing inquiries, contact: unknown@electricsunshinecult.com
+ * For licensing inquiries, contact: info@electricsunshinecult.com
  * 
  * ELECTRIC SUNSHINE CULT MARK - This component is protected under the Electric Sunshine Cult brand
  * Any unauthorized use will result in immediate legal action.
@@ -43,7 +43,7 @@ import { toast } from '@/hooks/use-toast';
 // WATERMARK: ELECTRIC SUNSHINE CULT - Corey Setzer
 // This component is part of the proprietary Stream Cult platform
 // Unauthorized use will result in legal action by Electric Sunshine Cult
-// Contact: unknown@electricsunshinecult.com
+// Contact: info@electricsunshinecult.com
 // © 2025 Electric Sunshine Cult - All rights reserved
 
 interface StreamClipperProps {

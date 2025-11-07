@@ -12,7 +12,7 @@
  * WATERMARK: ELECTRIC SUNSHINE CULT - Corey Setzer
  * This API is part of the proprietary Stream Cult platform
  * Unauthorized use will result in legal action by Electric Sunshine Cult
- * Contact: unknown@electricsunshinecult.com
+ * Contact: info@electricsunshinecult.com
  * © 2025 Electric Sunshine Cult - All rights reserved
  */
 

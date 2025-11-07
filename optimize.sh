@@ -8,7 +8,7 @@ set -e
 echo "🚀 Stream Cult - Electric Sunshine Cult Performance Optimization"
 echo "=================================================================="
 echo "Developer: Corey Setzer aka Unknown Artist Developer & Director Of Electric Sunshine Cult"
-echo "Contact: unknown@electricsunshinecult.com"
+echo "Contact: info@electricsunshinecult.com"
 echo "=================================================================="
 
 # Create optimized directories
@@ -325,5 +325,5 @@ echo "5. Deploy with Docker or your preferred method"
 echo ""
 echo "👑 Developed by Corey Setzer"
 echo "Unknown Artist Developer & Director Of Electric Sunshine Cult"
-echo "Contact: unknown@electricsunshinecult.com"
+echo "Contact: info@electricsunshinecult.com"
 echo "=================================="

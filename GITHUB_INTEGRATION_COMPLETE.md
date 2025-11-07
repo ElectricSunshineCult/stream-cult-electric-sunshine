@@ -4,7 +4,7 @@
 
 **Corey Setzer** - *Unknown Artist Developer & Director Of Electric Sunshine Cult*
 
-- **Email:** unknown@electricsunshinecult.com
+- **Email:** info@electricsunshinecult.com
 - **Organization:** Electric Sunshine Cult
 - **Copyright:** (c) 2025 Electric Sunshine Cult
 
@@ -27,7 +27,7 @@
 
 1. **Git Configuration Setup**
    - Configured Git with proper attribution: "Corey Setzer aka Unknown Artist Developer & Director Of Electric Sunshine Cult"
-   - Set up professional email: unknown@electricsunshinecult.com
+   - Set up professional email: info@electricsunshinecult.com
 
 2. **Attribution & Watermarking**
    - Added copyright headers to all major files
@@ -153,7 +153,7 @@ The project is now fully deployment-ready with:
 
 **For any inquiries, licensing, or support:**
 
-- **Email:** unknown@electricsunshinecult.com
+- **Email:** info@electricsunshinecult.com
 - **Subject:** Electric Sunshine Cult - [Your Topic]
 - **GitHub:** https://github.com/ElectricSunshineCult/stream-cult-electric-sunshine
 
