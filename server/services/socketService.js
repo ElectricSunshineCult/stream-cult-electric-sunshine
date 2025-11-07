@@ -377,9 +377,274 @@ const setupSocketHandlers = (io) => {
       }
     });
 
+    // Screen Share: Join screen share session
+    socket.on('join-screen-share', async (data) => {
+      try {
+        const { sessionId, streamId } = data;
+        
+        if (!sessionId || !streamId) {
+          socket.emit('error', { message: 'Session ID and Stream ID required' });
+          return;
+        }
+
+        // Check if session exists and is active
+        const sessionResult = await query(`
+          SELECT s.*, st.is_live
+          FROM screen_sharing_sessions s
+          JOIN streams st ON s.stream_id = st.id
+          WHERE s.id = $1 AND s.is_active = true AND s.stream_id = $2
+        `, [sessionId, streamId]);
+
+        if (sessionResult.rows.length === 0) {
+          socket.emit('error', { message: 'Screen share session not found or inactive' });
+          return;
+        }
+
+        const session = sessionResult.rows[0];
+        
+        // Join screen share room
+        await socket.join(`screen-share:${sessionId}`);
+        
+        // Add/update viewer in database
+        if (socket.user) {
+          const existingViewer = await query(
+            'SELECT id FROM screen_share_viewers WHERE session_id = $1 AND user_id = $2',
+            [sessionId, socket.user.id]
+          );
+
+          if (existingViewer.rows.length === 0) {
+            await query(
+              'INSERT INTO screen_share_viewers (session_id, user_id) VALUES ($1, $2)',
+              [sessionId, socket.user.id]
+            );
+          } else {
+            await query(
+              'UPDATE screen_share_viewers SET left_at = NULL WHERE session_id = $1 AND user_id = $2',
+              [sessionId, socket.user.id]
+            );
+          }
+        }
+
+        // Send session data to viewer
+        socket.emit('screen-share-data', {
+          sessionId,
+          title: session.title,
+          description: session.description,
+          sessionType: session.session_type,
+          qualitySettings: session.quality_settings,
+          startedAt: session.started_at,
+          streamerName: socket.user ? await getStreamerName(session.streamer_id) : 'Unknown'
+        });
+
+        // Notify other viewers about new participant
+        socket.to(`screen-share:${sessionId}`).emit('screen-share-viewer-joined', {
+          userId: socket.user?.id,
+          username: socket.user?.username
+        });
+
+        console.log(`User ${socket.user?.username} joined screen share ${sessionId}`);
+
+      } catch (error) {
+        console.error('Join screen share error:', error);
+        socket.emit('error', { message: 'Failed to join screen share session' });
+      }
+    });
+
+    // Screen Share: Leave screen share session
+    socket.on('leave-screen-share', async (data) => {
+      try {
+        const { sessionId } = data;
+        
+        await socket.leave(`screen-share:${sessionId}`);
+        
+        // Mark viewer as left in database
+        if (socket.user) {
+          await query(
+            'UPDATE screen_share_viewers SET left_at = CURRENT_TIMESTAMP WHERE session_id = $1 AND user_id = $2 AND left_at IS NULL',
+            [sessionId, socket.user.id]
+          );
+        }
+
+        // Notify other viewers
+        socket.to(`screen-share:${sessionId}`).emit('screen-share-viewer-left', {
+          userId: socket.user?.id,
+          username: socket.user?.username
+        });
+
+        console.log(`User ${socket.user?.username} left screen share ${sessionId}`);
+
+      } catch (error) {
+        console.error('Leave screen share error:', error);
+      }
+    });
+
+    // Screen Share: Streamer starts screen sharing
+    socket.on('screen-share-start', async (data) => {
+      try {
+        if (!socket.user || socket.user.role !== 'streamer') {
+          socket.emit('error', { message: 'Streamer role required' });
+          return;
+        }
+
+        const { sessionId, streamId } = data;
+
+        // Verify session ownership
+        const sessionResult = await query(
+          'SELECT * FROM screen_sharing_sessions WHERE id = $1 AND streamer_id = $2',
+          [sessionId, socket.user.id]
+        );
+
+        if (sessionResult.rows.length === 0) {
+          socket.emit('error', { message: 'Screen share session not found or access denied' });
+          return;
+        }
+
+        const session = sessionResult.rows[0];
+
+        // Join screen share room
+        await socket.join(`screen-share:${sessionId}`);
+
+        // Notify all viewers in the stream that screen sharing has started
+        io.to(`stream:${streamId}`).emit('screen-share-started', {
+          sessionId,
+          title: session.title,
+          description: session.description,
+          sessionType: session.session_type,
+          streamerName: socket.user.username
+        });
+
+        console.log(`Screen share ${sessionId} started by ${socket.user.username}`);
+
+      } catch (error) {
+        console.error('Screen share start error:', error);
+        socket.emit('error', { message: 'Failed to start screen sharing' });
+      }
+    });
+
+    // Screen Share: Streamer stops screen sharing
+    socket.on('screen-share-stop', async (data) => {
+      try {
+        if (!socket.user || socket.user.role !== 'streamer') {
+          socket.emit('error', { message: 'Streamer role required' });
+          return;
+        }
+
+        const { sessionId, streamId } = data;
+
+        // Verify session ownership
+        const sessionResult = await query(
+          'SELECT * FROM screen_sharing_sessions WHERE id = $1 AND streamer_id = $2',
+          [sessionId, socket.user.id]
+        );
+
+        if (sessionResult.rows.length === 0) {
+          socket.emit('error', { message: 'Screen share session not found or access denied' });
+          return;
+        }
+
+        // Update session status
+        await query(
+          'UPDATE screen_sharing_sessions SET is_active = false, ended_at = CURRENT_TIMESTAMP WHERE id = $1',
+          [sessionId]
+        );
+
+        // Mark all viewers as left
+        await query(
+          'UPDATE screen_share_viewers SET left_at = CURRENT_TIMESTAMP WHERE session_id = $1 AND left_at IS NULL',
+          [sessionId]
+        );
+
+        // Leave screen share room
+        await socket.leave(`screen-share:${sessionId}`);
+
+        // Notify all viewers that screen sharing has stopped
+        io.to(`stream:${streamId}`).emit('screen-share-stopped', {
+          sessionId
+        });
+
+        console.log(`Screen share ${sessionId} stopped by ${socket.user.username}`);
+
+      } catch (error) {
+        console.error('Screen share stop error:', error);
+        socket.emit('error', { message: 'Failed to stop screen sharing' });
+      }
+    });
+
+    // Screen Share: Update screen share settings
+    socket.on('update-screen-share', async (data) => {
+      try {
+        if (!socket.user || socket.user.role !== 'streamer') {
+          socket.emit('error', { message: 'Streamer role required' });
+          return;
+        }
+
+        const { sessionId, settings } = data;
+
+        // Verify session ownership
+        const sessionResult = await query(
+          'SELECT * FROM screen_sharing_sessions WHERE id = $1 AND streamer_id = $2',
+          [sessionId, socket.user.id]
+        );
+
+        if (sessionResult.rows.length === 0) {
+          socket.emit('error', { message: 'Screen share session not found or access denied' });
+          return;
+        }
+
+        // Update session settings
+        await query(
+          'UPDATE screen_sharing_sessions SET quality_settings = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+          [JSON.stringify(settings), sessionId]
+        );
+
+        // Notify all viewers about settings change
+        io.to(`screen-share:${sessionId}`).emit('screen-share-settings-updated', {
+          sessionId,
+          settings
+        });
+
+        console.log(`Screen share ${sessionId} settings updated by ${socket.user.username}`);
+
+      } catch (error) {
+        console.error('Update screen share error:', error);
+        socket.emit('error', { message: 'Failed to update screen share settings' });
+      }
+    });
+
+    // Helper function to get streamer name
+    async function getStreamerName(streamerId) {
+      try {
+        const result = await query('SELECT username FROM users WHERE id = $1', [streamerId]);
+        return result.rows[0]?.username || 'Unknown';
+      } catch (error) {
+        console.error('Get streamer name error:', error);
+        return 'Unknown';
+      }
+    }
+
     // Handle disconnection
     socket.on('disconnect', async () => {
       console.log(`User disconnected: ${socket.user?.username || 'Anonymous'} (${socket.id})`);
+      
+      // Clean up screen share viewers
+      for (const room of socket.rooms) {
+        if (room.startsWith('screen-share:')) {
+          const sessionId = parseInt(room.split(':')[1]);
+          
+          if (socket.user) {
+            await query(
+              'UPDATE screen_share_viewers SET left_at = CURRENT_TIMESTAMP WHERE session_id = $1 AND user_id = $2 AND left_at IS NULL',
+              [sessionId, socket.user.id]
+            );
+
+            // Notify other viewers
+            socket.to(`screen-share:${sessionId}`).emit('screen-share-viewer-left', {
+              userId: socket.user.id,
+              username: socket.user.username
+            });
+          }
+        }
+      }
       
       // Clean up viewer counts for all streams this user was in
       for (const room of socket.rooms) {

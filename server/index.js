@@ -28,6 +28,7 @@ const guestStreamersRoutes = require('./routes/guest-streamers');
 const raidsRoutes = require('./routes/raids');
 const tipSplitsRoutes = require('./routes/tip-splits');
 const userRestrictionsRoutes = require('./routes/user-restrictions');
+const screenShareRoutes = require('./routes/screen-share');
 
 // Import middleware
 const { authenticateToken } = require('./middleware/auth');
@@ -89,6 +90,7 @@ app.use('/api/guests', guestStreamersRoutes);
 app.use('/api/raids', raidsRoutes);
 app.use('/api/tip-splits', tipSplitsRoutes);
 app.use('/api/restrictions', userRestrictionsRoutes);
+app.use('/api/screen-share', screenShareRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/api/payments', paymentRoutes);
 
