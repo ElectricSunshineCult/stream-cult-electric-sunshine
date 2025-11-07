@@ -1,3 +1,20 @@
+/**
+ * Stream Cult - Advanced Streaming Platform (Client)
+ * 
+ * Copyright (c) 2025 Corey Setzer
+ * Unknown Artist Developer & Director Of Electric Sunshine Cult
+ * 
+ * This software is proprietary and confidential. Unauthorized reproduction,
+ * distribution, or use of this software is strictly prohibited.
+ * 
+ * Electric Sunshine Cult reserves all rights to this intellectual property.
+ * 
+ * For licensing inquiries, contact: unknown@electricsunshinecult.com
+ * 
+ * ELECTRIC SUNSHINE CULT MARK - This code is protected under the Electric Sunshine Cult brand
+ * Any unauthorized use will result in immediate legal action.
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';

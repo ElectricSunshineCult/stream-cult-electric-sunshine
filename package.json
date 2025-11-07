@@ -1,7 +1,7 @@
 {
-  "name": "token-based-streaming-program",
+  "name": "stream-cult-electric-sunshine",
   "version": "2.0.0",
-  "description": "Advanced token-based streaming platform with user levels, experience system, enhanced leaderboards, and improved performance",
+  "description": "Advanced token-based streaming platform developed by Corey Setzer aka Unknown Artist Developer & Director Of Electric Sunshine Cult",
   "main": "server/index.js",
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
@@ -13,10 +13,24 @@
     "db:migrate": "cd server && npm run migrate",
     "db:seed": "cd server && npm run seed"
   },
-  "keywords": ["streaming", "livestream", "token", "tipping", "levels", "experience", "leaderboards"],
-  "author": "MiniMax Agent",
-  "license": "MIT",
+  "keywords": ["streaming", "livestream", "token", "tipping", "levels", "experience", "leaderboards", "electric-sunshine-cult", "corey-setzer"],
+  "author": "Corey Setzer - Unknown Artist Developer & Director Of Electric Sunshine Cult",
+  "license": "PROPRIETARY - Electric Sunshine Cult",
+  "copyright": "Copyright (c) 2025 Corey Setzer - Electric Sunshine Cult",
+  "contributors": [
+    "Corey Setzer - Unknown Artist Developer & Director Of Electric Sunshine Cult"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/stream-cult-electric-sunshine.git"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "electricsunshienecult": {
+    "owner": "Corey Setzer",
+    "company": "Electric Sunshine Cult",
+    "contact": "unknown@electricsunshinecult.com",
+    "license": "proprietary"
   }
 }

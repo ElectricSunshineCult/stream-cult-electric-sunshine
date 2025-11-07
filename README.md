@@ -1,11 +1,27 @@
-# TOKEN BASED STREAMING PROGRAM - Advanced Gaming & Streaming Platform
+# STREAM CULT - Electric Sunshine Cult Advanced Gaming & Streaming Platform
 
-An advanced full-stack streaming platform with user levels, experience system, enhanced leaderboards, token-based tipping, real-time chat, regional organization, and comprehensive gamification features.
+An advanced full-stack streaming platform developed by **Corey Setzer** aka **Unknown Artist Developer & Director Of Electric Sunshine Cult** featuring user levels, experience system, enhanced leaderboards, token-based tipping, real-time chat, regional organization, and comprehensive gamification features.
 
-![TOKEN BASED STREAMING PROGRAM](https://img.shields.io/badge/Platform-Token%20Based%20Streaming-purple)
-![License](https://img.shields.io/badge/License-MIT-blue)
+**Copyright (c) 2025 Corey Setzer - Electric Sunshine Cult**
+
+*This software is proprietary and confidential. Unauthorized reproduction, distribution, or use of this software is strictly prohibited. Electric Sunshine Cult reserves all rights to this intellectual property.*
+
+**For licensing inquiries, contact: unknown@electricsunshinecult.com**
+
+![STREAM CULT](https://img.shields.io/badge/Platform-Electric%20Sunshine%20Cult-purple)
+![License](https://img.shields.io/badge/License-PROPRIETARY-red)
 ![Node.js](https://img.shields.io/badge/Node.js-18+-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue)
+
+---
+
+## 👑 About the Developer
+
+**Corey Setzer** - *Unknown Artist Developer & Director Of Electric Sunshine Cult*
+
+This advanced streaming platform is a proprietary creation of Electric Sunshine Cult, featuring cutting-edge technology and innovative streaming solutions. All development, architecture, and creative vision are credited to Corey Setzer and the Electric Sunshine Cult organization.
+
+**ELECTRIC SUNSHINE CULT MARK** - This code and platform are protected under the Electric Sunshine Cult brand. Any unauthorized use will result in immediate legal action.
 
 ## 🚀 Features
 

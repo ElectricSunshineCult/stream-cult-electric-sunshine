@@ -1,13 +1,22 @@
 {
-  "name": "stream-cult-server",
+  "name": "stream-cult-server-electric-sunshine",
   "version": "1.0.0",
-  "description": "Backend server for The Stream Cult platform",
+  "description": "Backend server for The Stream Cult platform - Developed by Corey Setzer aka Unknown Artist Developer & Director Of Electric Sunshine Cult",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
     "migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js"
+  },
+  "author": "Corey Setzer - Unknown Artist Developer & Director Of Electric Sunshine Cult",
+  "license": "PROPRIETARY - Electric Sunshine Cult",
+  "copyright": "Copyright (c) 2025 Corey Setzer - Electric Sunshine Cult",
+  "electricsunshienecult": {
+    "owner": "Corey Setzer",
+    "company": "Electric Sunshine Cult",
+    "contact": "unknown@electricsunshinecult.com",
+    "license": "proprietary"
   },
   "dependencies": {
     "express": "^4.18.2",

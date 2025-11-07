@@ -1,7 +1,11 @@
 {
-  "name": "tbsp-client",
+  "name": "stream-cult-client-electric-sunshine",
   "version": "2.0.0",
   "private": true,
+  "description": "Frontend client for Stream Cult platform - Developed by Corey Setzer aka Unknown Artist Developer & Director Of Electric Sunshine Cult",
+  "author": "Corey Setzer - Unknown Artist Developer & Director Of Electric Sunshine Cult",
+  "license": "PROPRIETARY - Electric Sunshine Cult",
+  "copyright": "Copyright (c) 2025 Corey Setzer - Electric Sunshine Cult",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

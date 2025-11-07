@@ -1,3 +1,20 @@
+/**
+ * Stream Cult - Advanced Streaming Platform (Stream Clipper Component)
+ * 
+ * Copyright (c) 2025 Corey Setzer
+ * Unknown Artist Developer & Director Of Electric Sunshine Cult
+ * 
+ * This software is proprietary and confidential. Unauthorized reproduction,
+ * distribution, or use of this software is strictly prohibited.
+ * 
+ * Electric Sunshine Cult reserves all rights to this intellectual property.
+ * 
+ * For licensing inquiries, contact: unknown@electricsunshinecult.com
+ * 
+ * ELECTRIC SUNSHINE CULT MARK - This component is protected under the Electric Sunshine Cult brand
+ * Any unauthorized use will result in immediate legal action.
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +39,12 @@ import {
   Upload
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+
+// WATERMARK: ELECTRIC SUNSHINE CULT - Corey Setzer
+// This component is part of the proprietary Stream Cult platform
+// Unauthorized use will result in legal action by Electric Sunshine Cult
+// Contact: unknown@electricsunshinecult.com
+// © 2025 Electric Sunshine Cult - All rights reserved
 
 interface StreamClipperProps {
   streamId?: string;

@@ -1,3 +1,21 @@
+/**
+ * STREAM CULT - Electric Sunshine Cult Clips API
+ * 
+ * Copyright (c) 2025 Corey Setzer
+ * Unknown Artist Developer & Director Of Electric Sunshine Cult
+ * 
+ * This software is proprietary and confidential. Unauthorized reproduction,
+ * distribution, or use of this software is strictly prohibited.
+ * 
+ * Electric Sunshine Cult reserves all rights to this intellectual property.
+ * 
+ * WATERMARK: ELECTRIC SUNSHINE CULT - Corey Setzer
+ * This API is part of the proprietary Stream Cult platform
+ * Unauthorized use will result in legal action by Electric Sunshine Cult
+ * Contact: unknown@electricsunshinecult.com
+ * © 2025 Electric Sunshine Cult - All rights reserved
+ */
+
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
